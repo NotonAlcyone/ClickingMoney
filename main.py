@@ -1,13 +1,26 @@
 from tkinter import *
 import os
 
-
+imagePath = {}
 canvasSizeX = 1280
 canvasSizeY = 720
 totalButtonNum = 10
 buttonSpace = 95
+resourceY = 30
+goldX = 100
+crystalX = 200
+
+imageFolder = "Resources/"
 root = Tk()
 canvas =  Canvas(root, width = canvasSizeX, height = 720)
+
+
+def imageLoader(path):
+	if path in imagePath:
+		return imagePath[path]
+	else:
+		imagePath[path] = PhotoImage(file = imageFolder + path)
+		return imagePath[path]
 
 def reload():
 	for i in range(0,len(button)):
@@ -16,7 +29,7 @@ def reload():
 def buyCall(parameter):
 	global crystal
 	payAmount = 100
-	if crystal > payAmount:
+	if crystal >= payAmount:
 		buttonCrystal[parameter] = True
 		print("구매가 완료되었습니다!")
 		crystal -= payAmount
@@ -49,12 +62,23 @@ def makeButton(num):
 
 def buttonPrint(num):
 	buttonPoint = canvasSizeX / (totalButtonNum+1)
+	buttonYPos = num * buttonPoint + buttonPoint
 	if buttonCrystal[num] == True :
-		upgradeButton = Button(root,compound = CENTER, command = lambda i = num: buttonCall(num),text = str(level[num]) + "레벨")
+		upgradeButton = Button(root,compound = CENTER, command = lambda i = num: buttonCall(num),text = str(level[num]) + "레벨\n"+str(level[num]*10) +"G",image = imageLoader("button3.png"),relief=FLAT)
 
 	else:
-		upgradeButton = Button(root,compound = CENTER, command = lambda i = num: buyCall(num),text = "Buy")
-	button.append(canvas.create_window(num * buttonPoint + buttonPoint, 600,window = upgradeButton))
+		upgradeButton = Button(root,compound = CENTER, command = lambda i = num: buyCall(num),image = imageLoader("buying button2.png"),relief=FLAT )
+	if num  < totalButtonNum/2:
+		buttonXPos = canvasSizeX - 400
+		button.append(canvas.create_window(buttonXPos, buttonYPos,window = upgradeButton))
+
+	else:
+		buttonXPos = canvasSizeX - 200
+		buttonYPos = (num- totalButtonNum/2 )*buttonPoint + buttonPoint
+		button.append(canvas.create_window(buttonXPos, buttonYPos,window = upgradeButton))
+		
+
+	
 
 
 def setButton(num):
@@ -65,6 +89,7 @@ def setButton(num):
 		else :
 			buttonCrystal.append(True)
 	makeButton(num)
+
 
 gold = 0
 goldText = None
@@ -87,7 +112,7 @@ def goldRefresh():
 	global gold
 	if goldText != None:
 		canvas.delete(goldText)
-	goldText = canvas.create_text(100, 100, text = gold)
+	goldText = canvas.create_text(goldX, resourceY, text = gold)
 
 crystal = 0
 crystalText = None
@@ -102,16 +127,56 @@ def crystalSystem(stat):
 def crystalRefresh():
 	global crystal
 	global crystalText
+
 	if crystalText != None:
 		canvas.delete(crystalText)
-	crystalText = canvas.create_text(200,100, text = "크리스탈: "+ str(crystal))
+	crystalText = canvas.create_text(crystalX,resourceY, text = str(crystal))
+
+def charBuy():
+	global crystal
+	global charButton
+	global total
+	if crystal > 500:
+		crystal -= 500
+		crystalRefresh()
+		canvas.delete(charButton)
+		canvas.delete(total)
+		total = canvas.create_image(400,500,image = imageLoader("f178.png"))
+	else:
+		print("out of crystal")
+
+def uiBuild():
+	global charButton
+	global total
+	total = canvas.create_image(400,500,image = imageLoader("f177.png"))
+	button = Button(root,command = charBuy,text = "캐릭터 구매")
+	charButton = canvas.create_window(150,150,window = button)
+	canvas.create_image(canvasSizeX/2,29,image = imageLoader("upperbar.png"))
+	canvas.create_image(crystalX - 40,resourceY, image = imageLoader("diamond.png"))
+	canvas.create_image(goldX  - 50,resourceY, image =  imageLoader("gold.png"))	
 
 
+
+startButton = []
+def gameSet(mode):
+	global startButton
+	canvas.delete(startButton[0])
+	canvas.delete(startButton[1])
+
+	uiBuild()
+	setButton(totalButtonNum)
+	goldSystem()
+	crystalSystem(mode)
+
+
+def mainScene():
+	button = Button(root,compound = CENTER, command = lambda:gameSet("PTW"),text = "유과금")
+	button2 = Button(root,compound = CENTER, command = lambda:gameSet("FTW"),text= "무과금")
+	startButton.append(canvas.create_window((canvasSizeX/2)-100, canvasSizeY/2,window = button))
+	startButton.append (canvas.create_window((canvasSizeX/2)+100, canvasSizeY/2,window = button2))
 
 canvas.pack()
-setButton(totalButtonNum)
-goldSystem()
-crystalSystem("FTW")
+mainScene()
 root.mainloop()
 
 ## makebutton 과 buttonCall 부분의 버튼 생성 부분 합치기
