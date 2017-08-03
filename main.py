@@ -1,5 +1,6 @@
 from tkinter import *
 import os
+import json
 
 imagePath = {}
 canvasSizeX = 1280
@@ -78,8 +79,40 @@ def buttonPrint(num):
 		button.append(canvas.create_window(buttonXPos, buttonYPos,window = upgradeButton))
 		
 
-	
-
+def saver():
+	global crystal
+	global gold
+	global level
+	global buttonCrystal	
+	file = open("save.txt","w+")
+	savelist = [str(crystal)+"\n"+str(gold)+"\n"+str(level)+"\n"+str(buttonCrystal)+"\n"+str(char)]
+	file.writelines(savelist)
+	file.close()
+def loader():
+	global crystal
+	global gold
+	global level
+	global buttonCrystal
+	global char
+	if os.path.isfile("save.txt"):
+		file = open("save.txt","r")
+		data = file.readlines()
+		crystal = int(data[0])
+		gold = int(data[1])
+		level = eval(data[2])
+		buttonCrystal = eval (data[3])
+		if str(data[4]) == "True":
+			char = True
+		else:
+			char = False
+		global startButton
+		canvas.delete(startButton[0])
+		canvas.delete(startButton[1])
+		
+		goldSystem()
+		crystalRefresh()
+		makeButton(totalButtonNum)
+		uiBuild()
 
 def setButton(num):
 	for i in range(0,num):
@@ -132,11 +165,15 @@ def crystalRefresh():
 		canvas.delete(crystalText)
 	crystalText = canvas.create_text(crystalX,resourceY, text = str(crystal))
 
+
+char = False
 def charBuy():
 	global crystal
 	global charButton
+	global char
 	global total
-	if crystal > 500:
+	if crystal >= 500 and char == False:
+		char = True
 		crystal -= 500
 		crystalRefresh()
 		canvas.delete(charButton)
@@ -148,12 +185,19 @@ def charBuy():
 def uiBuild():
 	global charButton
 	global total
-	total = canvas.create_image(400,500,image = imageLoader("f177.png"))
-	button = Button(root,command = charBuy,text = "캐릭터 구매")
-	charButton = canvas.create_window(150,150,window = button)
+	global char
+	if char == False:
+		total = canvas.create_image(400,500,image = imageLoader("f177.png"))
+		button = Button(root,command = charBuy,text = "캐릭터 구매")
+		charButton = canvas.create_window(150,150,window = button)
+	elif char == True:
+		total = canvas.create_image(400,500,image = imageLoader("f178.png"))
+
 	canvas.create_image(canvasSizeX/2,29,image = imageLoader("upperbar.png"))
 	canvas.create_image(crystalX - 40,resourceY, image = imageLoader("diamond.png"))
-	canvas.create_image(goldX  - 50,resourceY, image =  imageLoader("gold.png"))	
+	canvas.create_image(goldX  - 50,resourceY, image =  imageLoader("gold.png"))
+	button2 = Button(root,command = saver,text = "저장")
+	canvas.create_window(500,150,window = button2)	
 
 
 
@@ -174,6 +218,9 @@ def mainScene():
 	button2 = Button(root,compound = CENTER, command = lambda:gameSet("FTW"),text= "무과금")
 	startButton.append(canvas.create_window((canvasSizeX/2)-100, canvasSizeY/2,window = button))
 	startButton.append (canvas.create_window((canvasSizeX/2)+100, canvasSizeY/2,window = button2))
+	button3 = Button(root,command = loader,text = "띠용")
+	canvas.create_window(500,150,window = button3)	
+
 
 canvas.pack()
 mainScene()
