@@ -1,6 +1,8 @@
 from tkinter import *
 import os
-import json
+
+#Character image resource from URL : http://www.jewel-s.jp/)
+
 
 imagePath = {}
 canvasSizeX = 1280
@@ -10,10 +12,64 @@ buttonSpace = 95
 resourceY = 30
 goldX = 100
 crystalX = 200
+endingGold = 100000
+paymentClear = False
 
 imageFolder = "Resources/"
 root = Tk()
-canvas =  Canvas(root, width = canvasSizeX, height = 720)
+canvas =  Canvas(root, width = canvasSizeX, height = canvasSizeY)
+
+def saver():
+	global crystal
+	global gold
+	global level
+	global buttonCrystal	
+	global paymentClear
+	file = open("save.txt","w+")
+	savelist = [str(crystal)+"\n"+str(gold)+"\n"+str(level)+"\n"+str(buttonCrystal)+"\n"+str(char)+"\n"+str(paymentClear)]
+	file.writelines(savelist)
+	file.close()
+	
+
+def startLoad():
+	global paymentClear
+	if os.path.isfile("save.txt"):
+		file = open("save.txt","r")
+		data = file.readlines()
+		if str(data[5]) == "True":
+			paymentClear = True
+		else:
+			paymentClear = False
+def loader():
+	global crystal
+	global gold
+	global level
+	global buttonCrystal
+	global char
+	if os.path.isfile("save.txt"):
+		file = open("save.txt","r")
+		data = file.readlines()
+		crystal = int(data[0])
+		gold = int(data[1])
+		level = eval(data[2])
+		buttonCrystal = eval (data[3])
+		if str(data[4]) == "True":
+			char = True
+		else:
+			char = False
+		if str(data[5]) == "True":
+			paymentClear = True
+		else:
+			paymentClear = False
+		global startButton
+		canvas.delete(startButton[0])
+		canvas.delete(startButton[1])
+		canvas.delete(startButton[2])
+	
+		goldSystem()
+		crystalRefresh()
+		makeButton(totalButtonNum)
+		uiBuild()
 
 
 def imageLoader(path):
@@ -23,9 +79,7 @@ def imageLoader(path):
 		imagePath[path] = PhotoImage(file = imageFolder + path)
 		return imagePath[path]
 
-def reload():
-	for i in range(0,len(button)):
-		canvas.delete(button[i])
+
 
 def buyCall(parameter):
 	global crystal
@@ -61,6 +115,10 @@ def makeButton(num):
 	 for i in range(0,num):
 	 	buttonPrint(i)
 
+def reload():
+	for i in range(0,len(button)):
+		canvas.delete(button[i])
+
 def buttonPrint(num):
 	buttonPoint = canvasSizeX / (totalButtonNum+1)
 	buttonYPos = num * buttonPoint + buttonPoint
@@ -78,42 +136,6 @@ def buttonPrint(num):
 		buttonYPos = (num- totalButtonNum/2 )*buttonPoint + buttonPoint
 		button.append(canvas.create_window(buttonXPos, buttonYPos,window = upgradeButton))
 		
-
-def saver():
-	global crystal
-	global gold
-	global level
-	global buttonCrystal	
-	file = open("save.txt","w+")
-	savelist = [str(crystal)+"\n"+str(gold)+"\n"+str(level)+"\n"+str(buttonCrystal)+"\n"+str(char)]
-	file.writelines(savelist)
-	file.close()
-def loader():
-	global crystal
-	global gold
-	global level
-	global buttonCrystal
-	global char
-	if os.path.isfile("save.txt"):
-		file = open("save.txt","r")
-		data = file.readlines()
-		crystal = int(data[0])
-		gold = int(data[1])
-		level = eval(data[2])
-		buttonCrystal = eval (data[3])
-		if str(data[4]) == "True":
-			char = True
-		else:
-			char = False
-		global startButton
-		canvas.delete(startButton[0])
-		canvas.delete(startButton[1])
-		
-		goldSystem()
-		crystalRefresh()
-		makeButton(totalButtonNum)
-		uiBuild()
-
 def setButton(num):
 	for i in range(0,num):
 		level.append(1) #시작레벨은 1
@@ -128,11 +150,19 @@ gold = 0
 goldText = None
 def goldSystem():
 	global gold
+	global paymentClear
 	tmp = goldAmount()
 	gold += tmp
 	goldRefresh()
-	canvas.after(1000,goldSystem)
+	goldAdd = canvas.after(1000,goldSystem)
 	print("현 골드는 " + str(gold) + " 입니다")
+
+	if gold >= endingGold:
+		canvas.after_cancel(goldAdd)
+		canvas.delete('all')
+		paymentClear = True
+		saver()
+		root.quit()
 
 def goldAmount():
 	goldUp = 10
@@ -197,16 +227,14 @@ def uiBuild():
 	canvas.create_image(crystalX - 40,resourceY, image = imageLoader("diamond.png"))
 	canvas.create_image(goldX  - 50,resourceY, image =  imageLoader("gold.png"))
 	button2 = Button(root,command = saver,text = "저장")
-	canvas.create_window(500,150,window = button2)	
-
-
+	canvas.create_window(canvasSizeX - 100, 29,window = button2)	
 
 startButton = []
 def gameSet(mode):
 	global startButton
 	canvas.delete(startButton[0])
 	canvas.delete(startButton[1])
-
+	canvas.delete(startButton[2])
 	uiBuild()
 	setButton(totalButtonNum)
 	goldSystem()
@@ -214,16 +242,23 @@ def gameSet(mode):
 
 
 def mainScene():
+	global paymentClear
+	startLoad()
 	button = Button(root,compound = CENTER, command = lambda:gameSet("PTW"),text = "유과금")
-	button2 = Button(root,compound = CENTER, command = lambda:gameSet("FTW"),text= "무과금")
+	if paymentClear == True:
+		button2 = Button(root,compound = CENTER, command = lambda:gameSet("FTW"),text= "무과금")
+	else :
+		button2 = Button(root,compound = CENTER, text= "잠김")
 	startButton.append(canvas.create_window((canvasSizeX/2)-100, canvasSizeY/2,window = button))
 	startButton.append (canvas.create_window((canvasSizeX/2)+100, canvasSizeY/2,window = button2))
-	button3 = Button(root,command = loader,text = "띠용")
-	canvas.create_window(500,150,window = button3)	
+	button3 = Button(root,command = loader,text = "불러오기")
+	startButton.append(canvas.create_window(canvasSizeX/2,300,window = button3))
 
 
 canvas.pack()
+
 mainScene()
+
 root.mainloop()
 
 ## makebutton 과 buttonCall 부분의 버튼 생성 부분 합치기
